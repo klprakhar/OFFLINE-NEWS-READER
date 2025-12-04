@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline News</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#2563eb">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="newspaper" class="text-blue-600 w-6 h-6"></i>
+                <h1 class="text-xl font-bold text-slate-800">Offline News</h1>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="connection-status"
+                    class="hidden px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 flex items-center gap-1">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    Online
+                </div>
+                <button id="sync-btn"
+                    class="p-2 rounded-full hover:bg-slate-100 text-slate-600 transition-colors relative"
+                    title="Sync Feed">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Offline Banner -->
+    <div id="offline-banner" class="hidden bg-slate-800 text-white text-center py-2 text-sm font-medium">
+        You are currently offline. Showing cached content.
+    </div>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-3xl mx-auto px-4 py-6 w-full">
+
+        <!-- Search & Filter -->
+        <div class="mb-6 relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i data-lucide="search" class="text-slate-400 w-5 h-5"></i>
+            </div>
+            <input type="text" id="search-input" placeholder="Search articles..."
+                class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-lg leading-5 bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-shadow shadow-sm">
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex border-b border-slate-200 mb-6">
+            <button id="tab-feed"
+                class="flex-1 py-2 px-4 text-center text-sm font-medium text-blue-600 border-b-2 border-blue-600 focus:outline-none">
+                News Feed
+            </button>
+            <button id="tab-queue"
+                class="flex-1 py-2 px-4 text-center text-sm font-medium text-slate-500 hover:text-slate-700 focus:outline-none">
+                Reading Queue <span id="queue-count"
+                    class="ml-1 bg-slate-200 text-slate-600 py-0.5 px-2 rounded-full text-xs hidden">0</span>
+            </button>
+        </div>
+
+        <!-- Article List -->
+        <div id="article-list" class="space-y-4">
+            <!-- Articles will be injected here -->
+            <div class="text-center py-10 text-slate-500">
+                <div class="loader mx-auto mb-3"></div>
+                <p>Loading articles...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast"
+        class="fixed bottom-5 right-5 bg-slate-800 text-white px-4 py-2 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        Notification
+    </div>
+
+    <!-- Article Detail Modal -->
+    <div id="article-modal" class="fixed inset-0 z-50 hidden overflow-y-auto" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+                onclick="closeModal()"></div>
+
+            <!-- Modal panel -->
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+                class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-2xl leading-8 font-bold text-slate-900 mb-4" id="modal-title">Article Title
+                            </h3>
+                            <div class="mt-2">
+                                <img id="modal-image" src="" alt=""
+                                    class="w-full h-64 object-cover rounded-lg mb-6 shadow-md">
+                                <div
+                                    class="flex items-center justify-between text-sm text-slate-500 mb-6 border-b border-slate-100 pb-4">
+                                    <span id="modal-category"
+                                        class="font-semibold text-blue-600 uppercase tracking-wider">Category</span>
+                                    <span id="modal-date">Date</span>
+                                </div>
+                                <div class="prose prose-slate max-w-none text-slate-700 leading-relaxed space-y-4"
+                                    id="modal-content">
+                                    <!-- Content will be injected here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100">
+                    <a id="modal-link" href="#" target="_blank"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                        Visit Original Source
+                    </a>
+                    <button type="button" onclick="closeModal()"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="db.js"></script>
+    <script src="app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
